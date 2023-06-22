@@ -1,8 +1,8 @@
 
 
-//отримую api
+// api
 const urlHost = `https://api.thecatapi.com/v1`;
-const apiKey = 'live_0hps0ebTuMhF0gFeGUjdS1aTLWIGvakfj4aL4aqLkPwvc83xEYaB6Q6Ftz5jdJpH'; 
+const apiKey = 'live_RYeRNGczSYYwxluYqgiYL5bURXhWnBdkUUgsHhycoFAcnz9NPWS8HbcRH9uE8fYB'; 
 
 export function fetchBreeds() {
   return fetch(`${urlHost}/breeds`)
