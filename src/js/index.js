@@ -1,57 +1,91 @@
-import SlimSelect from 'slim-select'
 import Notiflix from 'notiflix';
-import 'slim-select/dist/slimselect.css';
+import SimpleLightbox from "simplelightbox";
+import "simplelightbox/dist/simple-lightbox.min.css";
 
-import { fetchBreeds } from './api/cat-api';
-import { createMarkup } from './markup/markup';
-import { selectEl } from './refs/refs';
-import { addMarkup } from './utils/utls';
-import { fetchCatByBreed } from './api/cat-api';
-import { divCatEl } from './refs/refs';
-import { createCatMarkup } from './markup/markup';
-import { loadEl } from './refs/refs';
-// import { errorEl } from './refs/refs';
+import { getPhotos } from "./api/api";
+import { makeMarkup } from "./markup/markup";
 
-window.addEventListener('load', onLoad);
+const formEl = document.querySelector('.search-form');
+const inputEl = document.querySelector('input');
+const galleryEl = document.querySelector('.gallery');
+export const btnLeadMoreEl = document.querySelector('.load-more');
+let currentPage = 1;
+let lastPage = 0;
 
-function onLoad() {
-  fetchBreeds()
-  .then(respone => {
-    const markupOption = createMarkup(respone);
+formEl.addEventListener('submit', onSubmit);
 
-    addMarkup(selectEl, markupOption);
-    new SlimSelect({
-      select: '#selectElement'
-    })
-  })
-  .catch(error => console.log(error.message));
-}
+async function onSubmit(event) {
+   
+   event.preventDefault();
+   let inputValue = encodeURIComponent(inputEl.value);
+   if(inputValue.trim() !== '') {
+     
+      const arrayPhotos = await getPhotos(inputValue, currentPage);
+      galleryEl.innerHTML = makeMarkup(arrayPhotos);
+      lastPage = Math.ceil(arrayPhotos.data.totalHits / 40);
+      
+      if (arrayPhotos.data.totalHits === 0) {
+         btnLeadMoreEl.classList.add('hidden');
+         Notiflix.Notify.failure("Sorry, there are no images matching your search query. Please try again.");
+       } else {
+         Notiflix.Notify.success(`Hooray! We found ${arrayPhotos.data.totalHits} images.`);
+       }
 
-selectEl.addEventListener('change', onChange);
+      currentPage = 1;
+      if (currentPage === lastPage || lastPage === 0) {
+         
+         btnLeadMoreEl.classList.add('hidden');
+      }
+      else {
+         btnLeadMoreEl.classList.remove('hidden');
+   }}
+    
+      new SimpleLightbox('.gallery a', {
+            captionDelay: 250,
+    });
+    const { height: cardHeight } = document
+  .querySelector(".gallery")
+  .firstElementChild.getBoundingClientRect();
 
-function onChange(event) {
+window.scrollBy({
+  top: cardHeight * 0.3,
+  behavior: "smooth",
+});
+    }
 
-      const id = event.target.value;
-      loadEl.classList.add('active');
-      divCatEl.classList.remove('active');
-      fetchCatByBreed(id)
-      .then(response => {
-          // console.log(response)
-          const catInfo = response[0];
-          const cat = createCatMarkup(catInfo);
-          divCatEl.innerHTML = cat;
-          divCatEl.classList.add('active');
-          loadEl.classList.remove('active');
+btnLeadMoreEl.addEventListener('click', loadMore);
 
-      })
-      .catch(() => {
-          Notiflix.Notify.failure('Oops!!! There is no cat!!! &#128008 Maybe he was scared by an angry dog!!! &#128021', {
-          width: '500px',
-          timeout: '5000',
-          fontSize: '25px',
-          opacity: 0.7,
-        });
-        loadEl.classList.remove('active');
-       });
-}
+async function loadMore () {
 
+   let inputValue = encodeURIComponent(inputEl.value);
+   const morePhotos = await getPhotos(inputValue, currentPage+1);
+   currentPage = morePhotos.config.params.page;
+ 
+   galleryEl.innerHTML = galleryEl.innerHTML + makeMarkup(morePhotos);
+
+   new SimpleLightbox('.gallery a', {
+      captionDelay: 250,
+   });
+
+   const { height: cardHeight } = document
+   .querySelector(".gallery")
+   .firstElementChild.getBoundingClientRect();
+ 
+ window.scrollBy({
+   top: cardHeight * 2,
+   behavior: "smooth",
+ });
+
+   if (currentPage === lastPage) {
+      Notiflix.Notify.info("We're sorry, but you've reached the end of search results.", {
+       width: '500px', 
+       svgSize: '120px',
+       position: 'right-bottom', 
+      });
+      btnLeadMoreEl.classList.add('hidden');
+      
+      return;
+   };
+   
+   
+};
